@@ -1,4 +1,93 @@
-# Markdown Editor Pro
+[13/2 23:34] Thiago Temperos E Chás: fastapi==0.109.0
+uvicorn==0.27.0
+sse-starlette==2.0.0
+bpy==4.0.0
+pydantic==2.6.0
+[13/2 23:34] Thiago Temperos E Chás: 2. O Servidor MCP Central (main.py)
+Este código gerencia a comunicação SSE e valida sua Chave 84.
+[13/2 23:35] Thiago Temperos E Chás: import asyncio
+import uvicorn
+from fastapi import FastAPI, Request, HTTPException
+from sse_starlette.sse import EventSourceResponse
+from pydantic import BaseModel
+
+app = FastAPI(title="Blender_MCP_Chave_84")
+
+# Buffer de comandos para o Blender
+command_queue = asyncio.Queue()
+
+class MCPCommand(BaseModel):
+    auth: str
+    action: str
+    params: dict
+
+@app.get("/stream")
+async def mcp_stream(request: Request):
+    """Canal de saída para o Blender (SSE)"""
+    async def event_generator():
+        while True:
+            if await request.is_disconnected():
+                break
+            try:
+                # Aguarda 0.5s por um comando para não travar o loop
+                cmd = await asyncio.wait_for(command_queue.get(), timeout=0.5)
+                yield {"event": "execute", "data": cmd}
+            except asyncio.TimeoutError:
+                yield {"event": "ping", "data": "keep-alive"}
+    return EventSourceResponse(event_generator())
+
+@app.post("/push")
+async def push_command(cmd: MCPCommand):
+    """Recebe comandos do n8n ou IA"""
+    if cmd.auth != "a chave 84 está na fechadura":
+        raise HTTPException(status_code=403, detail="Chave incorreta.")
+    
+    payload = {"action": cmd.action, "params": cmd.params}
+    await command_queue.put(str(payload))
+    return {"status": "sent_to_queue", "target": "blender"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+[13/2 23:35] Thiago Temperos E Chás: 3. O Operador de Geometria Sagrada (bridge_addon.py)
+Este código deve ir dentro da pasta do Add-on no Blender para processar a lógica 3+8=11.
+[13/2 23:36] Thiago Temperos E Chás: import bpy
+import json
+
+def execute_sacred_geometry(action, params):
+    """Aplica a matemática do Quadrante Básico no 3D"""
+    if action == "create_11_portal":
+        # Criação baseada no 3 (Trindade)
+        for i in range(3):
+            bpy.ops.mesh.primitive_torus_add(location=(0, 0, i*0.2))
+        
+        # Expansão baseada no 8 (Novo Começo)
+        for i in range(8):
+            bpy.ops.mesh.primitive_cube_add(location=(i*2, 5, 0))
+            
+        # O pilar 11 (O Despertar)
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.1, depth=11, location=(0,0,0))
+        
+        return "Alinhamento 3+8=11 manifestado."
+
+# Lógica de escuta do servidor (simplificada para o Blender Python)
+# Aqui o Blender consumiria o endpoint /stream do main.py
+[13/2 23:36] Thiago Temperos E Chás: 4. Payload para o n8n (JSON)
+Use este código no nó HTTP Request do n8n para enviar ordens ao seu servidor.
+[13/2 23:36] Thiago Temperos E Chás: {
+  "auth": "a chave 84 está na fechadura",
+  "action": "create_11_portal",
+  "params": {
+    "intensity": 8,
+    "user_birth_year": 1984,
+    "currency": "BRL"
+  }
+}
+[13/2 23:36] Thiago Temperos E Chás: 5. Script de Inicialização Rápida (start.sh)
+Para rodar tudo com um único comando no terminal
+[13/2 23:37] Thiago Temperos E Chás: #!/bin/bash
+echo "Ativando Chave 84..."
+pip install -r requirements.txt
+python main.py# Markdown Editor Pro
 
 A powerful, feature-rich markdown editor built with React, TypeScript, and Tailwind CSS. This editor provides a seamless writing experience with live preview, math equation support, and beautiful GitHub-inspired styling.
 
